@@ -150,9 +150,15 @@ prompt_filthy_rprompt() {
     branch=$(prompt_filthy_git_branch)
     repo_status=$(prompt_filthy_git_repo_status)
     ci_status=$(prompt_filthy_ci_status)
+
+    # check if we have any stashed changes
+    stashed_changes=" $(git stash list | wc -l)"
+    if [[ $stashed_changes -eq 0 ]]; then
+      stashed_changes=""
+    fi
   fi
 
-  echo -n "${branch}${repo_status}${ci_status}"
+  echo -n "${branch}${repo_status}${stashed_changes}${ci_status}"
 
   if [[ $FILTHY_SHOW_ZSH_VERSION -eq 1 ]]; then
     echo -n "%F{yellow} ${ZSH_VERSION}%f"
@@ -212,8 +218,11 @@ prompt_filthy_git_repo_status() {
   local up
   local down
 
-  dirty="$(git diff --ignore-submodules=all HEAD 2>/dev/null)"
-  [[ $dirty != "" ]] && rtn+=" %F{242}…%f"
+  dirty="$(git status | grep Untracked)"
+  [[ $dirty != "" ]] && rtn+=" %F{242}[dirty]%f"
+
+  modified="$(git diff --ignore-submodules=all HEAD 2>/dev/null)"
+  [[ $modified != "" ]] && rtn+=" %F{242}…%f"
 
   staged="$(git diff --staged HEAD 2>/dev/null)"
   [[ $staged != "" ]] && rtn+=" %F{242}*%f"
